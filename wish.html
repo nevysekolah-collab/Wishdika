@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Void Emperor Wish Simulator</title>
+    
+    <style>
+        /* BASE STYLES: Mengoptimalkan Tampilan Desktop/Portrait */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            background-image: url('1000487573.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            padding: 0;
+            display: flex; 
+            justify-content: center;
+            align-items: flex-start; /* Konten didorong ke atas (top) */
+            height: 100vh; 
+            padding-top: 10px; 
+            overflow: hidden; 
+        }
+
+        .container {
+            background-color: rgba(0, 0, 0, 0.9);
+            max-width: 700px; 
+            width: 90%;
+            padding: 15px; 
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(255, 0, 255, 0.9); 
+            text-align: center; 
+            position: relative; 
+            max-height: 98vh; 
+            overflow-y: auto; 
+            margin-bottom: 5px; 
+        }
+
+        /* TOMBOL GEMS & INVENTORY CONTAINER */
+        .top-controls {
+            position: absolute;
+            top: 10px; 
+            right: 10px; 
+            display: flex;
+            gap: 8px; 
+            z-index: 10;
+        }
+        .stats, .inventory-button {
+            background-color: #333;
+            color: white;
+            border: 1px solid #ff00ff;
+            border-radius: 5px;
+            font-size: 1em; 
+            padding: 2px 7px; 
+        }
+        .gem-icon {
+            width: 18px; 
+            height: 18px;
+            vertical-align: middle;
+        }
+
+        h1 {
+            color: #ffccff; 
+            text-shadow: 0 0 8px #ff00ff;
+            margin-top: 10px; 
+            margin-bottom: 8px; 
+            font-size: 1.8em; 
+        }
+        
+        .pity-status {
+            font-size: 0.8em; 
+            margin: 8px auto 8px auto; 
+            padding: 4px; 
+        }
+
+        /* --- LAYOUT UTAMA --- */
+        .main-gacha-area {
+            display: flex;
+            flex-direction: column; 
+            align-items: center; 
+            gap: 10px; 
+            margin-bottom: 10px; 
+        }
+
+        .banner-img {
+            width: 100%;
+            max-width: 400px; 
+            height: auto;
+            border-radius: 10px;
+            border: 4px solid #ff00ff; 
+            margin-bottom: 0; 
+        }
+        
+        .wish-controls {
+            display: flex; 
+            flex-direction: row; 
+            justify-content: center;
+            gap: 6px; 
+            margin-bottom: 0; 
+            flex-wrap: wrap; 
+            max-width: 100%;
+        }
+        
+        .wish-controls button {
+            background-color: #8a2be2; 
+            color: white;
+            border: 2px solid #e6e6fa; 
+            padding: 10px 20px; 
+            margin: 0; 
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 1.1em; 
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .wish-controls button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .wish-controls button:hover:not(:disabled) {
+            background-color: #9370db; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 0, 255, 0.5);
+        }
+
+        /* OVERLAY & ANIMASI SENTRAL */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; 
+            background-color: rgba(0, 0, 0, 0.95);
+            display: none; 
+            justify-content: center;
+            /* **PERUBAHAN KRITIKAL:** Pindahkan item ke atas */
+            align-items: flex-start; /* Mulai dari atas */
+            padding-top: 10vh; /* Turunkan 10% dari atas (sebelumnya di tengah) */
+            z-index: 100;
+        }
+        
+        /* Ukuran Animasi Item Sentral (Desktop/Portrait) */
+        .central-result-item {
+            width: 180px; 
+            height: 260px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 8px; 
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.7);
+            transform: scale(0.5); 
+            opacity: 0;
+            animation: zoom-in 0.5s ease-out forwards; 
+        }
+        .central-result-item img {
+            max-width: 100%;
+            max-height: 75%; 
+            border-radius: 10px;
+        }
+        .central-result-item p {
+            margin-top: 8px; 
+            font-size: 1.1em; 
+            font-weight: bold;
+        }
+
+        @keyframes zoom-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Gaya Modal Inventory */
+        .inventory-modal {
+            background-color: rgba(0, 0, 0, 0.95);
+            width: 90%;
+            max-width: 800px;
+            height: 90vh; 
+            padding: 20px; 
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(255, 0, 255, 0.9);
+            position: relative;
+            overflow-y: auto;
+        }
+        /* ... Gaya Inventory Modal lainnya (tetap) ... */
+
+        .intimate-message {
+            font-size: 1.2em; 
+            margin: 10px auto; 
+        }
+
+
+        /* ======================================= */
+        /* **MEDIA QUERY: Penyesuaian Mobile Landscape (FIX BUG & POSISI)** */
+        /* ======================================= */
+        @media (max-height: 500px) and (max-width: 900px) { 
+            
+            body {
+                padding-top: 5px; 
+            }
+
+            .container {
+                padding: 10px; 
+                max-height: 100vh;
+            }
+            
+            /* **PERUBAHAN KRITIKAL LANDSCAPE:** Naikkan posisi item gacha */
+            .overlay {
+                align-items: flex-start;
+                padding-top: 5vh; /* Sedikit lebih ke atas di landscape yang sempit */
+            }
+
+            .top-controls {
+                top: 5px; 
+                right: 5px; 
+                gap: 5px; 
+            }
+            .stats, .inventory-button {
+                font-size: 0.75em; 
+                padding: 1px 5px; 
+            }
+            .gem-icon {
+                width: 14px; 
+                height: 14px;
+            }
+
+            h1 {
+                margin-top: 5px; 
+                font-size: 1.3em; 
+                margin-bottom: 5px; 
+            }
+            .pity-status {
+                font-size: 0.7em; 
+                margin: 5px auto 5px auto; 
+            }
+
+            /* --- LAYOUT HORIZONTAL LANDSCAPE --- */
+            .main-gacha-area {
+                flex-direction: row; 
+                justify-content: center; 
+                align-items: center; 
+                gap: 10px; 
+            }
+
+            .banner-img {
+                max-width: 250px; 
+                height: auto;
+                border-width: 3px; 
+            }
+
+            .wish-controls {
+                flex-direction: column; 
+                align-items: center; 
+                gap: 5px; 
+                width: 40%; 
+            }
+
+            .wish-controls button {
+                padding: 5px 10px; 
+                font-size: 0.9em; 
+                border-width: 2px;
+                width: 100%; 
+            }
+
+            /* Ukuran item animasi (dijaga kecil di landscape) */
+            .central-result-item {
+                width: 150px; 
+                height: 220px; 
+                padding: 5px;
+                transform: scale(0.5); 
+                opacity: 0;
+                animation: zoom-in-landscape 0.5s ease-out forwards; 
+            }
+            .central-result-item p {
+                font-size: 1.0em; 
+            }
+
+            /* Keyframes khusus untuk landscape */
+            @keyframes zoom-in-landscape {
+                0% { transform: scale(0.5); opacity: 0; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            
+            .intimate-message {
+                font-size: 0.9em; 
+                margin: 5px auto; 
+            }
+            
+            .history-item img { width: 30px; height: 30px; }
+            .item-name { font-size: 0.9em; }
+            .item-time { font-size: 0.7em; }
+        }
+        
+        /* --- PROPERTI WARNA RARITY (TETAP) --- */
+        .rarity-5 { border-left: 5px solid gold; background-color: rgba(255, 215, 0, 0.1); }
+        .rarity-4 { border-left: 5px solid #a020f0; background-color: rgba(138, 43, 226, 0.1); }
+        .rarity-3 { border-left: 5px solid dodgerblue; background-color: rgba(30, 144, 255, 0.1); }
+
+        .text-5 { color: gold; }
+        .text-4 { color: #a020f0; }
+        .text-3 { color: dodgerblue; }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+        
+        <div class="top-controls">
+            <button id="inventory-btn" class="inventory-button">
+                Inventory
+            </button>
+            
+            <div class="stats">
+                <img src="1000487567.png" alt="Gems Icon" class="gem-icon">
+                <span id="gem-count">0</span>
+            </div>
+        </div>
+
+        <div class="header">
+            <h1>The Void Emperor Wish</h1>
+            
+            <div class="main-gacha-area">
+                <img id="banner-image" src="1000487575.jpg" alt="Wish Banner" class="banner-img">
+                
+                <div class="wish-controls">
+                    <button id="wish-x1">Wish x1 (160 Gems)</button>
+                    <button id="wish-x5">Wish x5 (800 Gems)</button>
+                    <p id="message" style="margin-top: 5px; font-size: 0.9em;"></p>
+                </div>
+            </div>
+            
+            <p class="pity-status" id="pity-status">Loading Pity...</p>
+        </div>
+        
+        <div id="results" class="results-grid">
+            <p style="display:none;">Simulator Minimalis Aktif</p>
+        </div>
+        
+    </div>
+
+    <div class="overlay" id="animation-overlay">
+        </div>
+
+    <div class="overlay" id="inventory-modal-overlay">
+        <div class="inventory-modal">
+            <span id="close-inventory" class="close-button">&times;</span>
+            <h2>Riwayat Gacha (Inventory)</h2>
+            <ul id="history-list" class="history-list">
+                <p>Memuat Riwayat...</p>
+            </ul>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DATA ITEM GACHA ---
+        const items = {
+            '5_star': [
+                { id: 'char_nacy', name: 'Nevy Hoshinova - The Void Emperor', img: '1000487572.png', rarity: 5 },
+                { id: 'char_sanzkiel', name: 'Sanzkiel - The Time Emperor', img: 'placeholder_sanzkiel_5star.png', rarity: 5 } 
+            ],
+            '4_star': [
+                { id: 'weap_scythe', name: 'Avarice Scythe (Evo)', img: 'placeholder_4a.png', rarity: 4 }, 
+                { id: 'item_wings', name: 'Void Fragment', img: 'placeholder_4b.png', rarity: 4 }
+            ],
+            '3_star': [
+                { id: 'mat_dust', name: 'Star Of Frame', img: 'placeholder_3a.png', rarity: 3 }, 
+                { id: 'mat_crystal', name: 'Low Grade Crystal', img: 'placeholder_3b.png', rarity: 3 },
+                { id: 'mat_orb', name: 'Basic Orb', img: 'placeholder_3c.png', rarity: 3 }
+            ]
+        };
+
+        // --- KONFIGURASI & STATUS GAME ---
+        const INITIAL_GEMS = 16000;
+        const PULL_ANIMATION_DELAY = 1500;
+        const rates = {
+            '5_star_base': 0.006, 
+            '4_star_base': 0.051, 
+            '3_star_base': 0.943  
+        };
+        const COST_X1 = 160;
+        const COST_X5 = 800;
+
+        // --- STATE GLOBAL ---
+        let currentGems; 
+        let wishesSince4Star; 
+        let wishesSince5Star; 
+        let isSpinning = false; 
+        
+        let gachaHistory = JSON.parse(localStorage.getItem('gachaHistory')) || [];
+
+        // --- ELEMEN HTML ---
+        const gemCountEl = document.getElementById('gem-count');
+        const resultsEl = document.getElementById('results'); 
+        const messageEl = document.getElementById('message');
+        const pityStatusEl = document.getElementById('pity-status');
+        const wishX1Btn = document.getElementById('wish-x1');
+        const wishX5Btn = document.getElementById('wish-x5');
+        const overlayEl = document.getElementById('animation-overlay');
+        const inventoryBtn = document.getElementById('inventory-btn');
+        const inventoryModalOverlay = document.getElementById('inventory-modal-overlay');
+        const closeInventoryBtn = document.getElementById('close-inventory');
+        const historyListEl = document.getElementById('history-list');
+
+        // --- FUNGSI AUDIO ---
+        const successSound = new Audio('success_sound.mp3'); 
+
+        // --- FUNGSI INTI GACHA ---
+        function makeAWish() {
+            wishesSince4Star++;
+            wishesSince5Star++;
+            
+            let result = null;
+            let roll = Math.random(); 
+
+            let final5StarRate = rates['5_star_base'];
+            if (wishesSince5Star >= 74) { 
+                final5StarRate += (wishesSince5Star - 74) * 0.06;
+            }
+            if (wishesSince5Star === 90) {
+                final5StarRate = 1.0; 
+            }
+
+            if (wishesSince4Star === 10 && final5StarRate < 1.0) { 
+                result = getRandomItem('4_star');
+            }
+            
+            if (result === null) {
+                if (roll < final5StarRate) {
+                    result = getRandomItem('5_star');
+                } else if (roll < (final5StarRate + rates['4_star_base'])) {
+                    result = getRandomItem('4_star');
+                } else {
+                    result = getRandomItem('3_star');
+                }
+            }
+            
+            if (result.rarity === 5) {
+                wishesSince5Star = 0;
+                wishesSince4Star = 0; 
+            } else if (result.rarity === 4) {
+                wishesSince4Star = 0;
+            }
+
+            // SIMPAN KE RIWAYAT
+            gachaHistory.unshift({ 
+                ...result, 
+                time: new Date().toLocaleString()
+            });
+            localStorage.setItem('gachaHistory', JSON.stringify(gachaHistory));
+            
+            return result;
+        }
+
+        function getRandomItem(rarity) {
+            const list = items[rarity];
+            const index = Math.floor(Math.random() * list.length);
+            return list[index];
+        }
+
+        // --- FUNGSI TAMPILAN & KONTROL ---
+        
+        // Menampilkan hasil di overlay tengah
+        function displayCentralResult(item) {
+            overlayEl.style.display = 'flex';
+            overlayEl.innerHTML = ''; 
+            
+            const itemDiv = document.createElement('div');
+            itemDiv.classList.add('central-result-item', `rarity-${item.rarity}`);
+            
+            const rarityTextClass = `text-${item.rarity}`;
+
+            itemDiv.innerHTML = `
+                <img src="${item.img}" alt="${item.name}">
+                <p class="${rarityTextClass}">${item.name}</p>
+            `;
+            overlayEl.appendChild(itemDiv); 
+
+            if (item.rarity === 5) {
+                successSound.play().catch(e => console.log("Gagal memutar suara: ", e));
+            }
+        }
+
+        function updateGems(amount) {
+            currentGems += amount;
+            gemCountEl.textContent = currentGems;
+            localStorage.setItem('currentGems', currentGems);
+        }
+
+        function updatePityDisplay() {
+            let wishesTo4Star = 10 - wishesSince4Star;
+            if (wishesTo4Star < 0) wishesTo4Star = 0;
+
+            let wishesTo5Star = 90 - wishesSince5Star;
+            if (wishesTo5Star < 0) wishesTo5Star = 0;
+            
+            pityStatusEl.innerHTML = `Jaminan 4★: **${wishesTo4Star}** Wish | Jaminan 5★: **${wishesTo5Star}** Wish`;
+
+            localStorage.setItem('wishesSince4Star', wishesSince4Star);
+            localStorage.setItem('wishesSince5Star', wishesSince5Star);
+        }
+        
+        // --- PESAN SPESIAL (INTIM) ---
+        function getIntimateMessage(item) {
+            if (item.rarity === 5) {
+                return `<span class="intimate-message">Selamat, kamu mendapatkan ${item.name}! Hadiah 5-Bintang!</span>`;
+            } else {
+                return `Wish selesai! Coba lagi!`;
+            }
+        }
+        
+        // --- FUNGSI UTAMA PULL ---
+        async function performWish(count, cost) {
+            if (isSpinning || currentGems < cost) {
+                if (currentGems < cost) {
+                    messageEl.textContent = "Gems tidak cukup, Kamu butuh " + (cost - currentGems) + " Gems lagi.";
+                }
+                return;
+            }
+            
+            isSpinning = true;
+            wishX1Btn.disabled = true;
+            wishX5Btn.disabled = true;
+            
+            updateGems(-cost); 
+            messageEl.textContent = `Melakukan Wish ${count}x... Tunggu sebentar`;
+            messageEl.classList.remove('intimate-message');
+            
+            const results = [];
+            for (let i = 0; i < count; i++) {
+                results.push(makeAWish()); 
+            }
+            
+            let is5StarPulled = false;
+            
+            // Animasi Pull Sentral Satu per Satu
+            for (let i = 0; i < results.length; i++) {
+                const item = results[i];
+                
+                displayCentralResult(item);
+                
+                if (item.rarity === 5) {
+                    is5StarPulled = true;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, PULL_ANIMATION_DELAY));
+            }
+
+            // Setelah semua animasi selesai
+            overlayEl.style.display = 'none';
+            isSpinning = false;
+            wishX1Btn.disabled = false;
+            wishX5Btn.disabled = false;
+            
+            updatePityDisplay();
+
+            if (is5StarPulled) {
+                const fiveStarItem = results.find(r => r.rarity === 5);
+                messageEl.innerHTML = getIntimateMessage(fiveStarItem);
+                messageEl.classList.add('intimate-message');
+            } else {
+                messageEl.textContent = `Wish ${count}x Selesai! Tidak ada 5★ kali ini.`;
+                messageEl.classList.remove('intimate-message');
+            }
+        }
+
+        // --- FUNGSI INVENTORY MODAL ---
+        function openInventory() {
+            inventoryModalOverlay.style.display = 'flex';
+            renderHistory();
+        }
+
+        function closeInventory() {
+            inventoryModalOverlay.style.display = 'none';
+        }
+
+        function renderHistory() {
+            gachaHistory = JSON.parse(localStorage.getItem('gachaHistory')) || [];
+            historyListEl.innerHTML = '';
+
+            if (gachaHistory.length === 0) {
+                historyListEl.innerHTML = '<p>Kamu belum melakukan Wish. Coba Wish sekarang!</p>';
+                return;
+            }
+
+            gachaHistory.forEach(item => {
+                const listItem = document.createElement('li');
+                listItem.classList.add('history-item', `rarity-${item.rarity}`);
+                
+                const rarityTextClass = `text-${item.rarity}`;
+
+                listItem.innerHTML = `
+                    <img src="${item.img}" alt="${item.name}">
+                    <div class="item-details">
+                        <span class="item-name ${rarityTextClass}">${item.name} (${item.rarity}★)</span><br>
+                        <span class="item-time">Diperoleh: ${item.time}</span>
+                    </div>
+                `;
+                historyListEl.appendChild(listItem);
+            });
+        }
+
+
+        // --- INISIALISASI & EVENT LISTENERS ---
+        function init() {
+            currentGems = parseInt(localStorage.getItem('currentGems')) || INITIAL_GEMS;
+            wishesSince4Star = parseInt(localStorage.getItem('wishesSince4Star')) || 0;
+            wishesSince5Star = parseInt(localStorage.getItem('wishesSince5Star')) || 0;
+            
+            updateGems(0); 
+            updatePityDisplay();
+            
+            wishX1Btn.disabled = false;
+            wishX5Btn.disabled = false;
+        }
+
+        wishX1Btn.addEventListener('click', () => performWish(1, COST_X1));
+        wishX5Btn.addEventListener('click', () => performWish(5, COST_X5)); 
+        
+        // Event listener untuk modal inventory
+        inventoryBtn.addEventListener('click', openInventory);
+        closeInventoryBtn.addEventListener('click', closeInventory);
+        inventoryModalOverlay.addEventListener('click', (e) => {
+            if (e.target === inventoryModalOverlay) {
+                closeInventory();
+            }
+        });
+
+        init(); 
+    </script>
+</body>
+</html>
